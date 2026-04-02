@@ -1,0 +1,31 @@
+Fix statfs64 f_flags missing on old glibc
+
+On older glibc versions (< 2.36), struct statfs64 does not have
+the f_flags member. Use statvfs64 as a fallback to get mount flags.
+
+Signed-off-by: nurikk <nurikk@users.noreply.github.com>
+
+--- a/src/corelib/io/qstorageinfo_linux.cpp
++++ b/src/corelib/io/qstorageinfo_linux.cpp
+@@ -193,6 +193,7 @@
+
+ void QStorageInfoPrivate::retrieveVolumeInfo()
+ {
++    struct statvfs64 statvfs_buf;
+     struct statfs64 statfs_buf;
+     int result;
+
+@@ -203,7 +204,11 @@
+         bytesFree = statfs_buf.f_bfree * statfs_buf.f_frsize;
+         bytesAvailable = statfs_buf.f_bavail * statfs_buf.f_frsize;
+         blockSize = int(statfs_buf.f_bsize);
+-        readOnly = (statfs_buf.f_flags & ST_RDONLY) != 0;
++        int statvfs_result;
++        QT_EINTR_LOOP(statvfs_result, statvfs64(QFile::encodeName(rootPath).constData(), &statvfs_buf));
++        if (statvfs_result == 0)
++            readOnly = (statvfs_buf.f_flag & ST_RDONLY) != 0;
++        else
++            readOnly = false;
+     }
+ }
+
