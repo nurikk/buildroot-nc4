@@ -1,0 +1,20 @@
+Fix EM_AARCH64 not defined on old elf.h headers
+
+Older toolchain elf.h headers may not define EM_AARCH64.
+Add a fallback definition with the standard value (183).
+
+Signed-off-by: nurikk <nurikk@users.noreply.github.com>
+--- a/src/corelib/plugin/qelfparser_p.cpp
++++ b/src/corelib/plugin/qelfparser_p.cpp
+@@ -20,6 +20,11 @@
+ #  error "Need ELF header to parse plugins."
+ #endif
+
++// EM_AARCH64 may not be defined in older elf.h headers
++#ifndef EM_AARCH64
++#  define EM_AARCH64 183
++#endif
++
+ QT_BEGIN_NAMESPACE
+
+ using namespace Qt::StringLiterals;
